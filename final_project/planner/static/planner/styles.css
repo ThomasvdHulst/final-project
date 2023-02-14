@@ -1,0 +1,141 @@
+.body {
+    margin: 30px;
+}
+
+.error_msg {
+    color: red;
+}
+
+.checkbox {
+    margin-top:30px;
+    margin-left:20px;
+    margin-right:20px;
+    border: 0px;
+    width: 100%;
+    height: 2em;
+}
+
+.color-option {
+    display: inline;
+}
+
+.add-event {
+    padding: 10px;
+    max-width: 700px;
+    display: none;
+    border: 1px solid black;
+    border-radius: 10px;
+}
+
+.event {
+    text-align: center;
+    padding: 10px;
+    max-width: 700px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+#month-selector {
+    width: 50%;
+    margin:auto;
+    text-align: center;
+}
+
+#previous-month {
+    float:left;
+    display: inline;
+}
+
+#next-month {
+    float:right;
+    display: inline;
+}
+
+.week { 
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 10px 0;
+}
+
+.week li {
+    display: inline-block;
+    width: 13.6%;
+    text-align: center;
+}
+
+.days {
+  padding: 10px 0;
+  margin: 0;
+}
+
+.days li {
+  display: inline-block;
+  width: 14%;
+  height: 120px;
+  text-align: right;
+  margin-bottom: 5px;
+  border: 1px solid black;
+}
+
+#events-container {
+    display: inline-block;
+    width: 400px;
+}
+
+#events {
+    width: 80%;
+    margin: auto;
+}
+
+#calendar-container {
+    text-align: center;
+    float:left;
+    width: 1000px;
+}
+
+#calendar {
+    text-align: center;
+    margin:auto;
+    width: 80%;
+    border: 1px solid black;
+    border-radius: 10px;
+    height: 400px;
+}
+
+.calendar-object {
+    border-radius: 10px;
+}
+
+.times {
+    display: inline;
+    width: 20%;
+    margin: 0px;
+    float: left;
+}
+
+.event-name {
+    display: inline;
+    font-size: 30px;
+}
+
+.popup {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0;
+    top: 0;
+    width: 20%; 
+    height: 50%; 
+    margin-top:80px;
+    margin-left: 100px;
+    background-color: lightblue;
+    border: 1px solid lightblue;
+    border-radius: 10px;
+    text-align: center;
+    padding: 10px;
+}
+
+
+
+
+

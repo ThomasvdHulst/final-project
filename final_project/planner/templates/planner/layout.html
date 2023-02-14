@@ -1,0 +1,47 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>{% block title %}Planner{% endblock %}</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <link href="{% static 'planner/styles.css' %}" rel="stylesheet">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="{% static 'planner/planner.js' %}"></script>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    </head>
+    <body>
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="{% url 'index' %}">Planner</a>
+          
+            <div>
+              <ul class="navbar-nav mr-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'index' %}"><strong>Home</strong></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'events' %}"><strong>Events</strong></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}"><strong>Logout</strong></a>
+                    </li>        
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}"><strong>Login</strong></a>
+                    </li>       
+                {% endif %}
+                
+              </ul>
+            </div>
+          </nav>
+        
+        <div class="body">
+            {% block body %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

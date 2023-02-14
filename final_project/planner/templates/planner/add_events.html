@@ -1,0 +1,49 @@
+{% extends "planner/layout.html" %}
+
+{% block body %}
+
+<div id="calendar-container">
+    <p hidden id="day_id">{{ day.id }}</p>
+    <h1>Planner for {{ day.day_date }}</h1>
+    <div id="calendar">
+        {% for event in events_on_day %}
+            <div style="background-color: {{ event.event.event_color }};" class="calendar-object">
+                <p class="times">{{ event.start_time }} - {{ event.end_time }}</p>
+                <p class="event-name">{{ event.event.event_name }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="events-container">
+    <div id="events" class="all-events">
+        {% for event in all_events %}
+            <div id="{{ event.id }}" class="event draggable" style="background-color: {{ event.event_color }}; border: 1px solid {{ event.event_color }}">
+                <h4>{{ event.event_name }}</h4>
+                <p>Duration: {{ event.event_default_time }}</p>
+            </div>
+        {% empty %}
+            <h4>You have not created any events yet!</h4>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="popup" id="confirm-event">
+</div>
+
+<div class="popup" id="set-times">
+    <form id="set-times-form" method="post">
+        {% csrf_token %}
+        <h4>Starting time:</h4>
+        <input class="form-control" id="starting-time" type="time">
+        <br>
+        <h4>Ending time:</h4>
+        <input class="form-control" id="ending-time" type="time">
+        <br>
+        <input class="btn btn-primary" type="submit" value="Add Event">
+        <br><br>
+        <button id="cancel-times" class="btn btn-primary">Cancel</button>
+    </form>
+</div>
+
+{% endblock %}

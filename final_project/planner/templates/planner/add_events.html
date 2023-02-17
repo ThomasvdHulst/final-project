@@ -4,15 +4,19 @@
 
 <div id="calendar-container">
     <p hidden id="day_id">{{ day.id }}</p>
+    <p hidden id="amount-events">{{ events_on_day|length }}</p>
+
     <h1>Planner for {{ day.day_date }}</h1>
-    <div id="calendar">
+    <div id="calendar" style="{% if events_on_day|length >= 1 %}max-height:1000px; {% else %} height:280px; {% endif %}">
         {% for event in events_on_day %}
-            <div style="background-color: {{ event.event.event_color }};" class="calendar-object">
+            <div id="event-container-{{ event.id }}" style="background-color: {{ event.event.event_color }};" class="calendar-object">
+                <h5 data-event="{{ event.id }}" class="delete-event" style="float:right;margin-right:10px">x</h5>
                 <p class="times">{{ event.start_time }} - {{ event.end_time }}</p>
                 <p class="event-name">{{ event.event.event_name }}</p>
             </div>
         {% endfor %}
     </div>
+    <h2 id="event_err" style="display: none;color:red">You have exceeded the maximum amount of events on a day.</h2>
 </div>
 
 <div id="events-container">
@@ -42,8 +46,8 @@
         <br>
         <input class="btn btn-primary" type="submit" value="Add Event">
         <br><br>
-        <button id="cancel-times" class="btn btn-primary">Cancel</button>
     </form>
+    <button id="cancel-times" class="btn btn-primary">Cancel</button>
 </div>
 
 {% endblock %}

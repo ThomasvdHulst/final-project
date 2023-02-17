@@ -37,3 +37,12 @@ class EventOnDay(models.Model):
 
     def __str__(self):
         return f"{self.event.event_name} on {self.day}"
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "event_name": self.event.event_name,
+            "color": self.event.event_color,
+            "start_time": self.start_time,
+            "end_time": self.end_time
+    }

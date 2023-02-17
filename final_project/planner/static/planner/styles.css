@@ -71,10 +71,11 @@
 .days li {
   display: inline-block;
   width: 14%;
-  height: 120px;
+  height: 180px;
   text-align: right;
   margin-bottom: 5px;
   border: 1px solid black;
+  vertical-align: top;
 }
 
 #events-container {
@@ -99,7 +100,6 @@
     width: 80%;
     border: 1px solid black;
     border-radius: 10px;
-    height: 400px;
 }
 
 .calendar-object {
@@ -135,6 +135,15 @@
     padding: 10px;
 }
 
+
+.event-in-calendar {
+    border-radius: 5px;
+    width: 90%;
+    margin: auto;
+    margin-bottom: 5px;
+    text-align: center;
+    font-size: 12px;
+}
 
 
 

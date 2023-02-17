@@ -14,23 +14,22 @@ import json
 
 
 #Constant colors to ensure form-manipulation is not possible
-COLOR_NAMES = ['red', 'blue', 'yellow', 'green']
+COLOR_NAMES = ['Red', 'Blue', 'Yellow', 'Green']
 COLOR_CODES = ['#FFCCCB', '#ADD8E6', '#FFFFE0', '#90EE90']
 
 class NewEventForm(forms.Form):
     event_name = forms.CharField(label="", max_length=30, required=True, widget=forms.TextInput(attrs={'placeholder': "e.g. Football Practice", 'class': 'form-control'}))
     
     CHOICES = [
-        ('red', 'Red'),
-        ('blue', 'Blue'),
-        ('yellow', 'Yellow'),
-        ('green', 'Green')
+        ('Red', 'Red'),
+        ('Blue', 'Blue'),
+        ('Yellow', 'Yellow'),
+        ('Green', 'Green')
     ]
 
     event_color = forms.MultipleChoiceField(label="", choices=CHOICES, required=True, widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-inline checkbox'}))
     event_hours = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0'}))
     event_minutes = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0', 'max':'60'}))
-    event_seconds = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0', 'max':'60'}))
 
 def index(request):
     current_day = datetime.now().day
@@ -52,6 +51,13 @@ def index(request):
     for i in range(day_start):
         prev_month_days.append(prev_month_amount_days - day_start + i + 1)
 
+
+    if current_month_number < 10:
+        current_month_number = f'0{current_month_number}'
+
+    
+    events_on_days = EventOnDay.objects.filter(event__event_user = request.user, day__day_date__contains = f'{current_year}-{current_month_number}')
+
     return render(request, "planner/index.html", {
         'current_month': current_month,
         'current_month_number':current_month_number,
@@ -59,7 +65,8 @@ def index(request):
         'current_year': current_year,
         'day_amount': day_amount,
         'day_start': day_start,
-        'prev_month_days': prev_month_days
+        'prev_month_days': prev_month_days,
+        'events_on_days': events_on_days,
     })
 
 
@@ -85,21 +92,13 @@ def events(request):
                 event_hours= '00'
 
             event_minutes = form.cleaned_data['event_minutes']
-            print(event_minutes)
             if event_minutes:
                 if event_minutes < 10:
                     event_minutes = f"0{event_minutes}"
             else:
                 event_minutes= '00'
 
-            event_seconds = form.cleaned_data['event_seconds']
-
-            if event_seconds:
-                if event_seconds < 10:
-                    event_seconds = f"0{event_seconds}"
-            else:
-                event_seconds= '00'
-            event_duration = f"{event_hours}:{event_minutes}:{event_seconds}"
+            event_duration = f"{event_hours}:{event_minutes}:00"
             event_duration = parse_duration(event_duration)
 
             new_event = Event(event_name=event_name, event_default_time=event_duration, event_color=new_event_color, event_user = request.user)
@@ -109,14 +108,17 @@ def events(request):
         else:
             return render(request, 'planner/events.html', {
                 'form': form,
-                'events': all_events
+                'events': all_events,
+                'colors': COLOR_NAMES
             })
 
     return render(request, 'planner/events.html', {
         'form': NewEventForm(),
-        'events': all_events
+        'events': all_events,
+        'colors': COLOR_NAMES
     })
 
+@csrf_exempt
 def get_event(request, event_id):
     # Try to find the given event
     try:
@@ -124,9 +126,38 @@ def get_event(request, event_id):
     except Event.DoesNotExist:
         return JsonResponse({"error": "Event not found."}, status=404)
 
-    # Give posts' content
     if request.method == "GET":
         return JsonResponse(event.serialize(), safe=False)
+
+    elif request.method == "PUT":
+        data = json.loads(request.body)
+        if data.get("event_name") is not None:
+            event.event_name = data["event_name"]
+        if data.get("event_duration") is not None:
+            event.event_default_time = parse_duration(data["event_duration"])
+        if data.get("event_color") is not None and data["event_color"] != 'default':
+            new_color = data["event_color"]
+            for i in range(len(COLOR_NAMES)):
+                if COLOR_NAMES[i] == new_color:
+                    chosen_color = COLOR_CODES[i]
+            event.event_color = chosen_color
+        event.save()
+        return HttpResponse(status=204)
+
+    else:
+        return JsonResponse({
+            "error": "GET or PUT request required."
+        }, status=400)
+
+
+def get_events_on_date(request, date):
+    try:
+        events = EventOnDay.objects.filter(event__event_user = request.user, day__day_date = date)
+    except EventOnDay.DoesNotExist:
+        return JsonResponse({"error": "No events on this day."}, status=404)
+
+    if request.method == "GET":
+        return JsonResponse([event.serialize() for event in events], safe=False)
 
 @csrf_exempt
 @login_required
@@ -154,7 +185,44 @@ def confirm_event(request):
     event_on_day = EventOnDay(event=event, day=day, start_time=starting_time, end_time=ending_time)
     event_on_day.save()
 
-    return JsonResponse({"message": "Event added to day successfully."}, status=201)
+    return JsonResponse({"message": "Event added to day successfully.",
+    "event_id":event.id}, status=201)
+
+@csrf_exempt
+@login_required
+def delete_event(request, event_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
+
+    data = json.loads(request.body)
+
+    event_id = data.get("event_id", "")
+
+    try:
+        event = Event.objects.get(id=event_id)
+        event.delete()
+    except Event.DoesNotExist:
+         return JsonResponse({"error": "Event does not exist"}, status=400)
+
+    return JsonResponse({"message": "Event deleted successfully."}, status=201)
+
+@csrf_exempt
+@login_required
+def delete_event_from_day(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
+
+    data = json.loads(request.body)
+
+    event_id = data.get("event_id", "")
+
+    try:
+        event_on_day = EventOnDay.objects.get(id=event_id)
+        event_on_day.delete()
+    except Event.DoesNotExist:
+         return JsonResponse({"error": "Event does not exist"}, status=400)
+
+    return JsonResponse({"message": "Event deleted from day successfully."}, status=201)
 
 def add_event(request, date):
     try:

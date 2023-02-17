@@ -16,9 +16,6 @@
         <h4>Event Duration (Minutes):</h4>
         {{ form.event_minutes }}
         <br>
-        <h4>Event Duration (Seconds):</h4>
-        {{ form.event_seconds }}
-        <br>
         <h4>Event Color (for distinction):</h4>
         {% for color in form.event_color %}
         <div class="color-option">
@@ -44,9 +41,33 @@
 
 <div class="all-events">
     {% for event in events %}
-        <div class="event" style="background-color: {{ event.event_color }}; border: 1px solid {{ event.event_color }}">
-            <h4>{{ event.event_name }}</h4>
-            <p>Duration: {{ event.event_default_time }}</p>
+        <div id="display-event-container-{{ event.id }}" class="event" style="background-color: {{ event.event_color }}; border: 1px solid {{ event.event_color }}">
+            <div id="event-info-{{ event.id }}">
+                <p class="edit-event-btn" style="float:right;color:blue" data-event="{{ event.id }}">Edit</p>
+                <p class="delete-event-btn" style="float:right;color:blue" data-event="{{ event.id }}">Delete&nbsp;&nbsp;</p>
+                <h4 id="display-event-name-{{ event.id }}" style="display: inline;">{{ event.event_name }}</h4>
+                <p id="display-event-duration-{{ event.id }}">Duration: {{ event.event_default_time }}</p>
+            </div>
+            <div id="event-edit-{{ event.id }}" style="display: none;">
+                <form method="post" id="edit-event-form-{{ event.id }}">
+                    <h4>Event name:</h4>
+                    <input class="form-control" id="event-name-{{ event.id }}" type="text" value="{{ event.event_name }}">
+                    <br>
+                    <h4>Event Duration:</h4>
+                    <input class="form-control" id="event-duration-{{ event.id }}" type="text" value="{{ event.event_default_time }}">
+                    <br>
+                    <h4>Event Color:</h4>
+                    {{ color }}
+                    <select class="form-control" id="event-color-{{ event.id }}">
+                        <option value="" selected>Event color:</option>
+                        {% for color in colors %}
+                            <option value="{{ color }}">{{ color }}</option>
+                        {% endfor %}
+                    </select>
+                    <br><br>
+                    <input type="submit" class="btn btn-primary" value="Save Event">
+                </form>
+            </div>
         </div>
     {% empty %}
         <h4>You have not created any events yet!</h4>

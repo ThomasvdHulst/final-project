@@ -1,24 +1,25 @@
-from django.shortcuts import render
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.dateparse import parse_duration
 from .models import User, Event, Day, EventOnDay
 from django.db import IntegrityError
-from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render
 from django.urls import reverse
-from django import forms
-from django.utils.dateparse import parse_duration
 from datetime import datetime
+from planner import views
+from django import forms
 import calendar
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
 import json
-
 
 #Constant colors to ensure form-manipulation is not possible
 COLOR_NAMES = ['Red', 'Blue', 'Yellow', 'Green']
 COLOR_CODES = ['#FFCCCB', '#ADD8E6', '#FFFFE0', '#90EE90']
 
+#Form for creating a new event
 class NewEventForm(forms.Form):
-    event_name = forms.CharField(label="", max_length=30, required=True, widget=forms.TextInput(attrs={'placeholder': "e.g. Football Practice", 'class': 'form-control'}))
+    event_name = forms.CharField(label="", max_length=30, required=True, widget=forms.TextInput(attrs={'placeholder': "e.g. Football Practice", 'class': 'form-control', 'id': 'create-event-name'}))
     
     CHOICES = [
         ('Red', 'Red'),
@@ -27,11 +28,17 @@ class NewEventForm(forms.Form):
         ('Green', 'Green')
     ]
 
-    event_color = forms.MultipleChoiceField(label="", choices=CHOICES, required=True, widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-inline checkbox'}))
-    event_hours = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0'}))
-    event_minutes = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0', 'max':'60'}))
+    event_color = forms.ChoiceField(label="", choices=CHOICES, required=True, widget=forms.Select(attrs={'class': 'form-control', 'id':'create-event-color'}))
+    event_hours = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0', 'max':'23', 'id':'create-event-hours'}))
+    event_minutes = forms.IntegerField(label="", required=False, widget=forms.NumberInput(attrs={'class':'form-control', 'min': '0', 'max':'60', 'id':'create-event-minutes'}))
 
+#Main index page
 def index(request):
+    #If user not logged-in, send to login page
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("login"))
+
+    #Get info on current date
     current_day = datetime.now().day
     current_month_number = datetime.now().month
     current_month = calendar.month_name[current_month_number]
@@ -51,10 +58,8 @@ def index(request):
     for i in range(day_start):
         prev_month_days.append(prev_month_amount_days - day_start + i + 1)
 
-
     if current_month_number < 10:
         current_month_number = f'0{current_month_number}'
-
     
     events_on_days = EventOnDay.objects.filter(event__event_user = request.user, day__day_date__contains = f'{current_year}-{current_month_number}')
 
@@ -70,13 +75,28 @@ def index(request):
     })
 
 
+#Events page
+@csrf_exempt
+@login_required
 def events(request):
     all_events = Event.objects.filter(event_user=request.user).order_by('event_name')
 
+    #Post request for creating new event
     if request.method == 'POST':
         form = NewEventForm(request.POST)
         if form.is_valid():
             event_name = form.cleaned_data['event_name']
+
+            for event in all_events:
+                if event.event_name.lower() == event_name.lower():
+                    return render(request, 'planner/events.html', {
+                        'form': form,
+                        'events': all_events,
+                        'colors': COLOR_NAMES,
+                        'error_msg': 'This event already exists.'
+                    })
+
+            #Find corresponding color-code for selected color
             event_color = form.cleaned_data['event_color']
             event_color = event_color[0]
             new_event_color = COLOR_CODES[0]
@@ -84,6 +104,7 @@ def events(request):
                 if event_color == COLOR_NAMES[i]:
                     new_event_color = COLOR_CODES[i]
 
+            #Ensure duration of event is in right format
             event_hours = form.cleaned_data['event_hours']
             if event_hours:
                 if event_hours < 10:
@@ -118,8 +139,13 @@ def events(request):
         'colors': COLOR_NAMES
     })
 
+
+#View for retrieving, or editing data on a single event
+@login_required
 @csrf_exempt
 def get_event(request, event_id):
+    all_events = Event.objects.filter(event_user = request.user)
+
     # Try to find the given event
     try:
         event = Event.objects.get(id=event_id)
@@ -129,20 +155,71 @@ def get_event(request, event_id):
     if request.method == "GET":
         return JsonResponse(event.serialize(), safe=False)
 
+    #For editing a event
     elif request.method == "PUT":
         data = json.loads(request.body)
         if data.get("event_name") is not None:
-            event.event_name = data["event_name"]
+            new_event_name = data["event_name"]
+
+            for every_event in all_events:
+                if every_event.event_name.lower() == new_event_name.lower() and new_event_name != event.event_name:
+                    return JsonResponse({
+                        "error": "This event already exists."
+                    }, status=201)
+            event.event_name = new_event_name
+
+        #Ensure filled in duration is valid
         if data.get("event_duration") is not None:
-            event.event_default_time = parse_duration(data["event_duration"])
+            time_valid = True
+
+            new_time = data["event_duration"]
+
+            if new_time:
+                if new_time.find(':') == -1:
+                    time_valid = False
+                else:
+                    new_time_split = new_time.split(':')
+
+                    if len(new_time_split) <= 2:
+                        time_valid = False
+
+                    try:
+                        new_time_hours = int(new_time_split[0])
+                    except ValueError:
+                        time_valid = False
+
+                    try:
+                        new_time_minutes = int(new_time_split[1])
+                    except ValueError:
+                        time_valid = False
+
+
+                    if(time_valid):
+                        if new_time_hours >=0 and new_time_hours <= 23 and new_time_minutes >=0 and new_time_minutes <= 60:
+                            event.event_default_time = parse_duration(data["event_duration"])
+                        else:
+                            time_valid = False
+                    else:
+                        time_valid = False
+            else:
+                time_valid = False
+
+            if not time_valid:
+                return JsonResponse({
+                    "error": "Please fill in a valid duration."
+                }, status=201)
+
         if data.get("event_color") is not None and data["event_color"] != 'default':
             new_color = data["event_color"]
             for i in range(len(COLOR_NAMES)):
                 if COLOR_NAMES[i] == new_color:
                     chosen_color = COLOR_CODES[i]
             event.event_color = chosen_color
+
         event.save()
-        return HttpResponse(status=204)
+        return JsonResponse({
+            "message": "Event edited succesfully"
+        }, status=201)
 
     else:
         return JsonResponse({
@@ -150,6 +227,8 @@ def get_event(request, event_id):
         }, status=400)
 
 
+#Get all events of a user in a given day
+@login_required
 def get_events_on_date(request, date):
     try:
         events = EventOnDay.objects.filter(event__event_user = request.user, day__day_date = date)
@@ -159,12 +238,68 @@ def get_events_on_date(request, date):
     if request.method == "GET":
         return JsonResponse([event.serialize() for event in events], safe=False)
 
+
+#View for creating an event when viewing a calendar day
+@csrf_exempt
+@login_required
+def create_event(request):
+    all_events = Event.objects.filter(event_user=request.user)
+
+    if request.method != "POST":
+        return JsonResponse({"error": "POST request required."}, status=400)
+
+    #Retrieve data sent by the post request
+    data = json.loads(request.body)
+
+    event_name = data.get("event_name", "")
+    event_color = data.get("event_color", "")
+    event_hours = data.get("event_hours", "")
+    event_minutes = data.get("event_minutes", "")
+
+    for event in all_events:
+        if event.event_name.lower() == event_name.lower():
+            return JsonResponse({"error": "This event already exists.",}, status=201)
+
+    new_event_color = COLOR_CODES[0]
+    for i in range(len(COLOR_NAMES)):
+        if event_color == COLOR_NAMES[i]:
+            new_event_color = COLOR_CODES[i]
+
+    #Ensure event duration is valid
+    if event_hours:
+        event_hours = int(event_hours)
+        if event_hours < 10:
+            event_hours = f"0{event_hours}"
+    else:
+        event_hours= '00'
+
+    if event_minutes:
+        event_minutes = int(event_minutes)
+        if event_minutes < 10:
+            event_minutes = f"0{event_minutes}"
+    else:
+        event_minutes= '00'
+
+    event_duration = f"{event_hours}:{event_minutes}:00"
+    event_duration = parse_duration(event_duration)
+
+    new_event = Event(event_name=event_name, event_default_time=event_duration, event_color=new_event_color, event_user = request.user)
+    new_event.save()
+
+    return JsonResponse({"message": "Event created successfully.",
+    "event_id":new_event.id,
+    "event_color": new_event.event_color,
+    "event_duration": new_event.event_default_time}, status=201)
+
+
+#Add a given event to a day
 @csrf_exempt
 @login_required
 def confirm_event(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST request required."}, status=400)
 
+    #Retrieve data from post request
     data = json.loads(request.body)
 
     event_id = data.get("event_id", "")
@@ -188,14 +323,16 @@ def confirm_event(request):
     return JsonResponse({"message": "Event added to day successfully.",
     "event_id":event.id}, status=201)
 
+
+#Delete a given event
 @csrf_exempt
 @login_required
 def delete_event(request, event_id):
     if request.method != "POST":
         return JsonResponse({"error": "POST request required."}, status=400)
 
+    #Retrieve data from post request
     data = json.loads(request.body)
-
     event_id = data.get("event_id", "")
 
     try:
@@ -206,14 +343,16 @@ def delete_event(request, event_id):
 
     return JsonResponse({"message": "Event deleted successfully."}, status=201)
 
+
+#Delete an event from a given day
 @csrf_exempt
 @login_required
 def delete_event_from_day(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST request required."}, status=400)
 
+    #Retrieve data from post request
     data = json.loads(request.body)
-
     event_id = data.get("event_id", "")
 
     try:
@@ -224,7 +363,10 @@ def delete_event_from_day(request):
 
     return JsonResponse({"message": "Event deleted from day successfully."}, status=201)
 
-def add_event(request, date):
+
+#View events on a given date
+@login_required
+def view_day(request, date):
     try:
         day = Day.objects.get(day_date = date)
     except Day.DoesNotExist:
@@ -237,9 +379,14 @@ def add_event(request, date):
     return render(request, 'planner/add_events.html', {
         'day':day,
         "events_on_day":events_on_day,
-        "all_events": all_events
+        "all_events": all_events,
+        "form": NewEventForm()
     })
 
+
+#Filter all events of a user asc, on duration or on color of events
+@login_required
+@csrf_exempt
 def order_events(request, action):
     # Try to find the given events
     try:
@@ -252,10 +399,11 @@ def order_events(request, action):
     except Event.DoesNotExist:
         return JsonResponse({"error": "Event not found."}, status=404)
 
-    # Give posts' content
     if request.method == "GET":
         return JsonResponse([event.serialize() for event in events], safe=False)
 
+
+#Register account of an user
 def register_account(request):
     if request.method == "POST":
         username = request.POST["username"]
@@ -267,7 +415,6 @@ def register_account(request):
                 "error_msg": "Passwords are not the same."
             })
 
-        # Attempt to create new user
         try:
             user = User.objects.create_user(username=username, password=password)
             user.save()
@@ -280,6 +427,8 @@ def register_account(request):
     else:
         return render(request, "planner/register.html")
 
+
+#Login an user
 def login_account(request):
     if request.method == "POST":
 
@@ -297,6 +446,8 @@ def login_account(request):
     else:
         return render(request, "planner/login.html")
 
+
+#Logout an user
 def logout_account(request):
     logout(request)
     return HttpResponseRedirect(reverse("index"))

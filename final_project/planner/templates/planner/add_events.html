@@ -9,7 +9,7 @@
     <h1>Planner for {{ day.day_date }}</h1>
     <div id="calendar" style="{% if events_on_day|length >= 1 %}max-height:1000px; {% else %} height:280px; {% endif %}">
         {% for event in events_on_day %}
-            <div id="event-container-{{ event.id }}" style="background-color: {{ event.event.event_color }};" class="calendar-object">
+            <div id="event-container-{{ event.id }}" style="background-color: {{ event.event.event_color }};" class="calendar-object" data-start_time = "{{ event.start_time|date:'H:i:s' }}">
                 <h5 data-event="{{ event.id }}" class="delete-event" style="float:right;margin-right:10px">x</h5>
                 <p class="times">{{ event.start_time }} - {{ event.end_time }}</p>
                 <p class="event-name">{{ event.event.event_name }}</p>
@@ -30,9 +30,34 @@
             <h4>You have not created any events yet!</h4>
         {% endfor %}
     </div>
+    <div id="create-event">
+        <button id="create-event-btn" class="btn btn-primary">Create New Event</button>
+    </div>
+    
 </div>
 
 <div class="popup" id="confirm-event">
+</div>
+<div class="popup popup-big" id="create-event-popup">
+    <h3>Add a New Event:</h3>
+    <h4 id="existing_event_err" class="error_msg"></h4>
+    <form method="post" id="create-event-form">
+        {% csrf_token %}
+        <h4>Event Name:</h4>
+        {{ form.event_name }}
+        <br>
+        <h4>Event Duration (Hours):</h4>
+        {{ form.event_hours }}
+        <br>
+        <h4>Event Duration (Minutes):</h4>
+        {{ form.event_minutes }}
+        <br>
+        <h4>Event Color (for distinction):</h4>
+        {{ form.event_color }}
+        <br>
+        <input id="cancel-create-event" type="button" class="btn btn-primary" value="Cancel">
+        <input type="submit" class="btn btn-primary" value="Add Event">
+    </form>
 </div>
 
 <div class="popup" id="set-times">

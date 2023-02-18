@@ -6,15 +6,6 @@
     color: red;
 }
 
-.checkbox {
-    margin-top:30px;
-    margin-left:20px;
-    margin-right:20px;
-    border: 0px;
-    width: 100%;
-    height: 2em;
-}
-
 .color-option {
     display: inline;
 }
@@ -88,6 +79,15 @@
     margin: auto;
 }
 
+#create-event {
+    width: 80%;
+    margin: auto;
+}
+
+#create-event-btn {
+    width: 100%;
+}
+
 #calendar-container {
     text-align: center;
     float:left;
@@ -135,6 +135,11 @@
     padding: 10px;
 }
 
+.popup-big {
+    width: 30%;
+    height: 80%;
+}
+
 
 .event-in-calendar {
     border-radius: 5px;
@@ -142,7 +147,7 @@
     margin: auto;
     margin-bottom: 5px;
     text-align: center;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 

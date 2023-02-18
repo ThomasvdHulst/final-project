@@ -17,17 +17,16 @@
         {{ form.event_minutes }}
         <br>
         <h4>Event Color (for distinction):</h4>
-        {% for color in form.event_color %}
-        <div class="color-option">
-            {{ color }}
-        </div>
-        {% endfor %}
+        {{ form.event_color }}
         <br>
         <input type="submit" class="btn btn-primary" value="Add Event">
     </form>
 </div>
 
 <h2>All Events:</h2>
+{% if error_msg %}
+    <h4 class="error_msg">{{ error_msg }}</h4>
+{% endif %}
 
 {% if events %}
     <h4>Order by:</h4>
@@ -50,14 +49,14 @@
             </div>
             <div id="event-edit-{{ event.id }}" style="display: none;">
                 <form method="post" id="edit-event-form-{{ event.id }}">
-                    <h4>Event name:</h4>
+                    <h4 id="event-error-{{ event.id }}" class="error_msg"></h4>
+                    <h4>Event Name:</h4>
                     <input class="form-control" id="event-name-{{ event.id }}" type="text" value="{{ event.event_name }}">
                     <br>
                     <h4>Event Duration:</h4>
                     <input class="form-control" id="event-duration-{{ event.id }}" type="text" value="{{ event.event_default_time }}">
                     <br>
                     <h4>Event Color:</h4>
-                    {{ color }}
                     <select class="form-control" id="event-color-{{ event.id }}">
                         <option value="" selected>Event color:</option>
                         {% for color in colors %}

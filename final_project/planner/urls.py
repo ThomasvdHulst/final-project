@@ -10,9 +10,10 @@ urlpatterns = [
     path("events", views.events, name="events"),
     path("order/<str:action>", views.order_events, name="order_events"),
     path("get-event/<int:event_id>", views.get_event, name="get_event"),
-    path("add-event/<str:date>", views.add_event, name="add_event"),
+    path("view-day/<str:date>", views.view_day, name="view_day"),
     path("confirm-event", views.confirm_event, name="confirm_event"),
     path("delete-event-from-day", views.delete_event_from_day, name="delete_event_from_day"),
     path("events-on-date/<str:date>", views.get_events_on_date, name="get_events_on_date"),
-    path('delete-event/<int:event_id>', views.delete_event, name="delete_event")
+    path('delete-event/<int:event_id>', views.delete_event, name="delete_event"),
+    path('create-event', views.create_event, name="create_event"),
 ]

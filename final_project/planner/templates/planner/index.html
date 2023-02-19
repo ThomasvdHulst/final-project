@@ -27,12 +27,12 @@
       {% endif %}
     {% endfor %}
     {% for i in "month_days"|rjust:day_amount %}
-      <li data-date="{{ current_year }}-{{ current_month_number }}-{{ forloop.counter }}">
+      <li id="li-{{ current_year }}-{{ current_month_number }}-{{ forloop.counter }}" data-date="{{ current_year }}-{{ current_month_number }}-{{ forloop.counter }}">
         <strong>{{ forloop.counter }}</strong>
         {% with counter=forloop.counter %}
           {% for event in events_on_days %}
             {% if event.day.day_date|date:"d"|add:"0" == counter %}
-              <div class="event-in-calendar" style="background-color: {{ event.event.event_color }}; border: 1px solid {{ event.event.event_color }}">
+              <div id="event-{{ event.id }}" data-start_time = "{{ event.start_time|date:'H:i:s' }}" class="event-in-calendar div-{{ current_year }}-{{ current_month_number }}-{{ counter }}" style="background-color: {{ event.event.event_color }}; border: 1px solid {{ event.event.event_color }}">
                 <p style="float:left; margin:auto">{{ event.start_time }}-{{ event.end_time }}</p>
                 <p style="display:inline"><strong>{{ event.event.event_name }}</strong></p>  
               </div>

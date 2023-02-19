@@ -20,6 +20,10 @@
 </div>
 
 <div id="events-container">
+    <div id="create-event">
+        <button id="create-event-btn" class="btn btn-primary">Create New Event</button>
+    </div>
+    <br>
     <div id="events" class="all-events">
         {% for event in all_events %}
             <div id="{{ event.id }}" class="event draggable" style="background-color: {{ event.event_color }}; border: 1px solid {{ event.event_color }}">
@@ -30,10 +34,7 @@
             <h4>You have not created any events yet!</h4>
         {% endfor %}
     </div>
-    <div id="create-event">
-        <button id="create-event-btn" class="btn btn-primary">Create New Event</button>
-    </div>
-    
+
 </div>
 
 <div class="popup" id="confirm-event">

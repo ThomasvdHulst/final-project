@@ -268,6 +268,8 @@ function mainpage(){
     let current_month =  document.querySelector('#month').innerHTML;
     let year = parseInt(document.querySelector('#year').innerHTML);
 
+    //Start by ordering all events
+    order_events();
 
     //When clicked on <, show data for previous month
     document.querySelector('#previous-month').onclick = () => {
@@ -305,6 +307,7 @@ function mainpage(){
             day_li.style.marginLeft = '3px';
             day_li.dataset.date = `${year}-${month_number + 1}-${i + 1}`;
             day_li.innerHTML = `<strong>${i + 1}</strong>`;
+            day_li.id = `li-${year}-${month_number + 1}-${i + 1}`;
 
             fetch(`/events-on-date/${year}-${month_number + 1}-${i + 1}`)
             .then(response => response.json())
@@ -312,9 +315,11 @@ function mainpage(){
                 if(events){
                     events.forEach((event) => {
                         let event_on_day_div = document.createElement('div');
-                        event_on_day_div.className = 'event-in-calendar';
+                        event_on_day_div.className = `event-in-calendar div-${year}-${month_number + 1}-${i + 1}`;
                         event_on_day_div.style.backgroundColor = event.color;
                         event_on_day_div.style.border = `1px solid ${event.color}`;
+                        event_on_day_div.id = `event-${event.id}`;
+                        event_on_day_div.dataset.start_time = `${event.start_time}`;
 
                         event_on_day_div.innerHTML = event_on_day_div.innerHTML + `<p style='float:left;margin:auto'>${event.start_time}-${event.end_time}</p><p style='display:inline'><strong>${event.event_name}</strong></p>`;
 
@@ -365,6 +370,7 @@ function mainpage(){
             day_li.style.marginLeft = '3px';
             day_li.dataset.date = `${year}-${month_number + 1}-${i + 1}`;
             day_li.innerHTML = `<strong>${i + 1}</strong>`;
+            day_li.id = `li-${year}-${month_number + 1}-${i + 1}`;
 
             fetch(`/events-on-date/${year}-${month_number + 1}-${i + 1}`)
             .then(response => response.json())
@@ -372,9 +378,11 @@ function mainpage(){
                 if(events){
                     events.forEach((event) => {
                         let event_on_day_div = document.createElement('div');
-                        event_on_day_div.className = 'event-in-calendar';
+                        event_on_day_div.className = `event-in-calendar div-${year}-${month_number + 1}-${i + 1}`;
                         event_on_day_div.style.backgroundColor = event.color;
                         event_on_day_div.style.border = `1px solid ${event.color}`;
+                        event_on_day_div.id = `event-${event.id}`;
+                        event_on_day_div.dataset.start_time = `${event.start_time}`;
 
                         event_on_day_div.innerHTML = event_on_day_div.innerHTML + `<p style='float:left;margin:auto'>${event.start_time}-${event.end_time}</p><p style='display:inline'><strong>${event.event_name}<strong></p>`;
 
@@ -386,6 +394,56 @@ function mainpage(){
         }
         document.querySelector('#month').innerHTML = next_month;
         mainpage()
+    }
+
+    //Function to order the events based on starting time
+    function order_events(){
+        current_month_number = months.indexOf(current_month) + 1;
+        if(current_month_number < 10){
+            current_month_number = `0${current_month_number}`;
+        }
+        
+        for(let i = 1; i < 32; i++){
+            let day = i;
+
+            let date = `li-${year}-${current_month_number}-${day}`;
+            let date_li = document.querySelector(`#${date}`);
+
+            if(date_li != null){
+                let div_order = [];
+                document.querySelectorAll(`.div-${year}-${current_month_number}-${day}`).forEach((event_div) => {
+                    let start_time = event_div.dataset.start_time;
+                    let hour = parseInt(start_time.substring(0,2));
+                    let minute = parseInt(start_time.substring(3,5));
+                    if(div_order.length >= 1){
+                        let inserted = false;
+                        for(let i = 0; i < div_order.length; i++){
+                            let contender_start_time = document.querySelector(`#${div_order[i]}`).dataset.start_time;
+                            let contender_hour = parseInt(contender_start_time.substring(0,2));
+                            let contender_minute = parseInt(contender_start_time.substring(3,5));
+    
+                            if((hour < contender_hour) || (hour == contender_hour && minute <= contender_minute)){
+                                div_order.splice(i, 0, event_div.id);
+                                inserted = true;
+                                break;
+                            }
+                        }
+    
+                        if(!inserted){
+                            div_order.push(event_div.id);
+                        }
+                    }else{
+                        div_order.push(event_div.id);
+                    }
+                })
+
+                for(let i = 0; i < div_order.length; i++){
+                    let appending_div_id = div_order[i];
+                    let appending_div = document.querySelector(`#${appending_div_id}`);
+                    date_li.appendChild(appending_div);
+                }
+            }
+        }
     }
 
     //When clicked on a given day, send user to the view-day page for that given day

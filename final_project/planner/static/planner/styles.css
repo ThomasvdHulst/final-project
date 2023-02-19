@@ -72,6 +72,8 @@
 #events-container {
     display: inline-block;
     width: 400px;
+    overflow: scroll;
+    max-height: 580px;
 }
 
 #events {
